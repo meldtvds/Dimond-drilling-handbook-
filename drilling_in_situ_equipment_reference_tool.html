@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drilling & In-Situ Equipment Reference Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #075e54;
+            --primary-hover: #128c7e;
+            --secondary: #107c41;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #cbd5e0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        h2 { text-align: center; color: var(--primary); font-size: 1.4rem; margin: 0; flex-grow: 1; }
+        p.sub { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 0; margin-bottom: 20px; }
+
+        label { display: block; margin-top: 12px; font-weight: bold; font-size: 0.85rem; color: var(--text-main); }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            background-color: #fff;
+            transition: border-color 0.2s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .row { display: flex; gap: 12px; }
+        .row > div { flex: 1; }
+
+        .filter-section {
+            background-color: #e6fffa;
+            border: 1px solid #38b2ac;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-weight: bold;
+            color: #234e52;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #b2f5ea;
+            padding-bottom: 6px;
+        }
+
+        .results-container {
+            margin-top: 20px;
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .results-title {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .spec-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .spec-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .spec-value {
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            border: 1px solid #cbd5e0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #075e54;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f7fafc;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .excel-btn {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .excel-btn:hover { background-color: #0b582e; }
+
+        .reset-btn {
+            background-color: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .reset-btn:hover { background-color: #c53030; }
+
+        .badge {
+            background: #319795;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header-container">
+        <div></div>
+        <h2>Drilling & In-Situ Equipment Reference</h2>
+        <button type="button" class="reset-btn" onclick="resetFilters()">🗑️ Reset</button>
+    </div>
+    <p class="sub">GeoGroup Drilling Handbook Data Engine</p>
+
+    <!-- Filter & Selection Section -->
+    <div class="filter-section">
+        <div class="filter-title">Equipment Selection & Search</div>
+        
+        <div class="row">
+            <div>
+                <label>Select Category:</label>
+                <select id="categorySelect" onchange="onCategoryChange()">
+                    <option value="all">-- All Categories --</option>
+                    <option value="rods">Drill Rods</option>
+                    <option value="barrels">Core Barrels & Bits</option>
+                    <option value="casing">Casing</option>
+                    <option value="flow">Flow Rates</option>
+                    <option value="insitu">In-Situ Testing (CPTu, SDMT, eVST)</option>
+                </select>
+            </div>
+            <div>
+                <label>Select Specific Equipment / Size:</label>
+                <select id="equipmentSelect" onchange="onEquipmentChange()">
+                    <option value="all">-- All Items in Category --</option>
+                </select>
+            </div>
+        </div>
+
+        <label style="margin-top: 12px;">Quick Keyword Search:</label>
+        <input type="text" id="searchInput" placeholder="Type size, model, manufacturer (e.g., NQ, Pagani, AW)..." oninput="onSearchInput()">
+    </div>
+
+    <!-- Results Display Section -->
+    <div class="results-container" id="resultsContainer">
+        <div class="results-title">
+            <span>Equipment Specifications</span>
+            <span id="matchCount" class="badge">0 items</span>
+        </div>
+        
+        <div id="cardDetails" class="spec-grid" style="display:none; margin-bottom: 15px;"></div>
+
+        <div class="table-responsive">
+            <table id="specTable">
+                <thead>
+                    <tr id="tableHeader"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button type="button" class="excel-btn" onclick="exportToExcel()">📊 Download Filtered Data as Excel (.xlsx)</button>
+    </div>
+</div>
+
+<script>
+    // Complete Handbook Database
+    const handbookData = {
+        rods: [
+            { size: "AQ", od: 44.50, id: 34.90, wall: 4.80, couplingId: 34.90, tpi: 4, outerArea: 15.60, innerArea: 9.60, annulusArea: 6.00, mass: 4.63 },
+            { size: "BQ", od: 55.60, id: 46.00, wall: 4.80, couplingId: 46.00, tpi: 3, outerArea: 24.30, innerArea: 16.60, annulusArea: 7.70, mass: 5.97 },
+            { size: "NQ", od: 70.00, id: 60.30, wall: 4.90, couplingId: 60.30, tpi: 3, outerArea: 38.50, innerArea: 28.60, annulusArea: 9.90, mass: 7.58 },
+            { size: "HQ", od: 88.90, id: 77.80, wall: 5.60, couplingId: 77.80, tpi: 3, outerArea: 62.10, innerArea: 47.50, annulusArea: 14.50, mass: 11.45 },
+            { size: "PQ", od: 114.30, id: 103.20, wall: 5.60, couplingId: 103.20, tpi: 3, outerArea: 102.60, innerArea: 83.60, annulusArea: 19.00, mass: 15.26 },
+            { size: "BWY", od: 54.00, id: 38.10, wall: 8.00, couplingId: 19.00, tpi: 5, outerArea: 22.90, innerArea: 11.40, annulusArea: 11.50, mass: 9.10 }
+        ],
+        barrels: [
+            { design: "NXC", bitOd: 91.95, bitId: 68.45, reamingOd: 92.20, coreDia: 68.20, coreArea: 36.50, areaPct: 54.40, holeAreaVol: 67.10 },
+            { design: "TNW", bitOd: 75.31, bitId: 60.50, reamingOd: 75.69, coreDia: 60.30, coreArea: 28.50, areaPct: 62.90, holeAreaVol: 45.30 },
+            { design: "AQ", bitOd: 47.63, bitId: 26.97, reamingOd: 48.01, coreDia: 26.70, coreArea: 5.60, areaPct: 30.70, holeAreaVol: 18.30 },
+            { design: "BQ", bitOd: 59.56, bitId: 36.40, reamingOd: 59.94, coreDia: 36.20, coreArea: 10.30, areaPct: 36.10, holeAreaVol: 28.50 },
+            { design: "NQ", bitOd: 75.31, bitId: 47.63, reamingOd: 75.69, coreDia: 47.40, coreArea: 17.60, areaPct: 38.90, holeAreaVol: 45.30 },
+            { design: "HQ", bitOd: 95.58, bitId: 63.50, reamingOd: 96.06, coreDia: 63.30, coreArea: 31.40, areaPct: 43.10, holeAreaVol: 72.90 },
+            { design: "PQ", bitOd: 122.05, bitId: 84.96, reamingOd: 122.61, coreDia: 84.70, coreArea: 56.40, areaPct: 47.50, holeAreaVol: 118.60 }
+        ],
+        casing: [
+            { size: "AW", od: 57.30, id: 48.50, tpi: 4, outerArea: 25.80, innerArea: 18.50, mass: 5.64 },
+            { size: "BW", od: 73.20, id: 60.50, tpi: 4, outerArea: 42.10, innerArea: 28.70, mass: 10.43 },
+            { size: "NW", od: 89.10, id: 76.40, tpi: 4, outerArea: 62.40, innerArea: 45.80, mass: 12.80 },
+            { size: "HW", od: 114.50, id: 101.40, tpi: 4, outerArea: 103.00, innerArea: 80.80, mass: 16.83 },
+            { size: "PW", od: 139.70, id: 125.50, tpi: 3, outerArea: 153.30, innerArea: 123.70, mass: 23.14 }
+        ],
+        flow: [
+            { size: "AQ", impBit: "19 – 23", surfBit: "8 – 12" },
+            { size: "BQ / BQ-3", impBit: "27 – 36", surfBit: "15 – 19" },
+            { size: "NQ / NQ-3", impBit: "36 – 45", surfBit: "19 – 26" },
+            { size: "HQ / HQ-3", impBit: "45 – 55", surfBit: "23 – 42" },
+            { size: "PQ / PQ-3", impBit: "75 – 110", surfBit: "38 – 57" },
+            { size: "CHD 76", impBit: "36 – 45", surfBit: "19 – 26" },
+            { size: "CHD 101", impBit: "45 – 55", surfBit: "23 – 42" }
+        ],
+        insitu: [
+            { manufacturer: "Pagani", equipment: "CPTu", od: 36.00, notes: "Standard CPTu cone" },
+            { manufacturer: "Pagani", equipment: "S-CPTu", od: 47.50, notes: "Seismic CPTu cone" },
+            { manufacturer: "Gouda", equipment: "10cm^2", od: 36.00, notes: "Standard 10cm² cone" },
+            { manufacturer: "Gouda", equipment: "15cm^2", od: 44.00, notes: "Heavy-duty 15cm² cone" },
+            { manufacturer: "Gouda", equipment: "S-CPTu", od: 52.00, notes: "Seismic 15cm² cone" },
+            { manufacturer: "Gouda", equipment: "C-CPTu", od: 44.00, notes: "Compensation cone" },
+            { manufacturer: "AP van den Berg", equipment: "eVST - Unprotected", od: 65.00, notes: "Blade: 80x40x1.2 mm" },
+            { manufacturer: "AP van den Berg", equipment: "eVST - Protected", od: 90.00, notes: "Blade: 100x50x1.5 / 150x75x2.0 mm" },
+            { manufacturer: "AP van den Berg", equipment: "MOSTAP 35", od: 60.00, notes: "Piston sampler" },
+            { manufacturer: "AP van den Berg", equipment: "MOSTAP 65", od: 90.00, notes: "Large piston sampler" },
+            { manufacturer: "Marchetti", equipment: "Medusa", od: 95.00, notes: "Dilatometer equipment" },
+            { manufacturer: "Marchetti", equipment: "Seismic", od: 52.00, notes: "Seismic SDMT module" }
+        ]
+    };
+
+    function populateEquipmentDropdown(category) {
+        const eqSelect = document.getElementById('equipmentSelect');
+        eqSelect.innerHTML = '<option value="all">-- All Items in Category --</option>';
+
+        if (category === 'all') {
+            return;
+        }
+
+        const items = handbookData[category] || [];
+        items.forEach((item, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            if (category === 'rods') opt.textContent = `Drill Rod - ${item.size} (OD: ${item.od}mm)`;
+            else if (category === 'barrels') opt.textContent = `Core Barrel - ${item.design} (Bit OD: ${item.bitOd}mm)`;
+            else if (category === 'casing') opt.textContent = `Casing - ${item.size} (OD: ${item.od}mm)`;
+            else if (category === 'flow') opt.textContent = `Flow Rate - ${item.size}`;
+            else if (category === 'insitu') opt.textContent = `${item.manufacturer} : ${item.equipment} (OD: ${item.od}mm)`;
+            eqSelect.appendChild(opt);
+        });
+    }
+
+    function onCategoryChange() {
+        const cat = document.getElementById('categorySelect').value;
+        populateEquipmentDropdown(cat);
+        renderTable();
+    }
+
+    function onEquipmentChange() {
+        renderTable();
+    }
+
+    function onSearchInput() {
+        renderTable();
+    }
+
+    function renderTable() {
+        const cat = document.getElementById('categorySelect').value;
+        const eqIndex = document.getElementById('equipmentSelect').value;
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+        let dataset = [];
+        if (cat === 'all') {
+            // Combine all categories into flat view if searching across all
+            for (let k in handbookData) {
+                handbookData[k].forEach(item => {
+                    dataset.push({ category: k, ...item });
+                });
+            }
+        } else {
+            dataset = handbookData[cat].map(item => ({ category: cat, ...item }));
+        }
+
+        // Filter by specific equipment dropdown if selected
+        if (eqIndex !== 'all' && cat !== 'all') {
+            dataset = [dataset[parseInt(eqIndex)]];
+        }
+
+        // Filter by text search query
+        if (query) {
+            dataset = dataset.filter(item => {
+                return Object.values(item).some(val => 
+                    val !== null && val !== undefined && val.toString().toLowerCase().includes(query)
+                );
+            });
+        }
+
+        document.getElementById('matchCount').textContent = `${dataset.length} items found`;
+        buildTableUI(cat, dataset);
+    }
+
+    function buildTableUI(cat, data) {
+        const thead = document.getElementById('tableHeader');
+        const tbody = document.getElementById('tableBody');
+        const cardDetails = document.getElementById('cardDetails');
+
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        cardDetails.style.display = 'none';
+        cardDetails.innerHTML = '';
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#666; padding:20px;">No matching equipment found.</td></tr>`;
+            return;
+        }
+
+        // If single item selected or filtered to 1, show card summary view
+        if (data.length === 1 && document.getElementById('equipmentSelect').value !== 'all') {
+            cardDetails.style.display = 'grid';
+            const item = data[0];
+            for (let [k, v] of Object.entries(item)) {
+                if (k === 'category') continue;
+                const div = document.createElement('div');
+                div.className = 'spec-card';
+                div.innerHTML = `
+                    <div class="spec-label">${formatLabel(k)}</div>
+                    <div class="spec-value">${v}</div>
+                `;
+                cardDetails.appendChild(div);
+            }
+        }
+
+        // Build Table Columns based on category or combined view
+        let headers = [];
+        if (cat === 'rods') {
+            headers = ["Size", "Nom. OD (mm)", "Nom. ID (mm)", "Wall (mm)", "Coupling ID (mm)", "T.P.I.", "Mass (kg/m)"];
+            thead.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            data.forEach(d => {
+                tbody.innerHTML += `<tr>
+                    <td><b>${d.size}</b></td><td>${d.od}</td><td>${d.id}</td><td>${d.wall}</td><td>${d.couplingId}</td><td>${d.tpi}</td><td>${d.mass}</td>
+                </tr>`;
+            });
+        } else if (cat === 'barrels') {
+            headers = ["Core Barrel Design", "Bit OD Set (mm)", "Bit ID Set (mm)", "Reaming OD (mm)", "Core Dia. (mm)", "Core Area (cm²)", "Hole Area Vol (cm²/10m)"];
+            thead.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            data.forEach(d => {
+                tbody.innerHTML += `<tr>
+                    <td><b>${d.design}</b></td><td>${d.bitOd}</td><td>${d.bitId}</td><td>${d.reamingOd}</td><td>${d.coreDia}</td><td>${d.coreArea}</td><td>${d.holeAreaVol}</td>
+                </tr>`;
+            });
+        } else if (cat === 'casing') {
+            headers = ["Size", "Nom. OD (mm)", "Nom. ID (mm)", "TPI", "Outer Area/Vol (cm²/10m)", "Inner Area/Vol (cm²/10m)", "Mass (kg/m)"];
+            thead.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            data.forEach(d => {
+                tbody.innerHTML += `<tr>
+                    <td><b>${d.size}</b></td><td>${d.od}</td><td>${d.id}</td><td>${d.tpi}</td><td>${d.outerArea}</td><td>${d.innerArea}</td><td>${d.mass}</td>
+                </tr>`;
+            });
+        } else if (cat === 'flow') {
+            headers = ["Size", "Impregnated Bit (ℓ/min)", "Surface Set Bit (ℓ/min)"];
+            thead.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            data.forEach(d => {
+                tbody.innerHTML += `<tr>
+                    <td><b>${d.size}</b></td><td>${d.impBit}</td><td>${d.surfBit}</td>
+                </tr>`;
+            });
+        } else if (cat === 'insitu') {
+            headers = ["Manufacturer", "Equipment", "Nominal OD (mm)", "Notes / Dimensions"];
+            thead.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            data.forEach(d => {
+                tbody.innerHTML += `<tr>
+                    <td><b>${d.manufacturer}</b></td><td>${d.equipment}</td><td>${d.od}</td><td>${d.notes || '-'}</td>
+                </tr>`;
+            });
+        } else {
+            // General view for search across all
+            headers = ["Category", "Identifier / Name", "Size / Model", "OD / Specs (mm)"];
+            thead.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            data.forEach(d => {
+                tbody.innerHTML += `<tr>
+                    <td><span class="badge">${d.category.toUpperCase()}</span></td>
+                    <td><b>${d.size || d.design || d.equipment}</b></td>
+                    <td>${d.manufacturer || d.tpi || '-'}</td>
+                    <td>${d.od || d.bitOd || '-'}</td>
+                </tr>`;
+            });
+        }
+    }
+
+    function formatLabel(key) {
+        return key.replace(/([A-Z])/g, ' $1').toUpperCase();
+    }
+
+    function resetFilters() {
+        document.getElementById('categorySelect').value = 'all';
+        populateEquipmentDropdown('all');
+        document.getElementById('searchInput').value = '';
+        renderTable();
+    }
+
+    function exportToExcel() {
+        const cat = document.getElementById('categorySelect').value;
+        const wb = XLSX.utils.book_new();
+
+        let dataset = [];
+        if (cat === 'all') {
+            for (let k in handbookData) {
+                handbookData[k].forEach(item => {
+                    dataset.push({ Category: k.toUpperCase(), ...item });
+                });
+            }
+        } else {
+            dataset = handbookData[cat].map(item => ({ Category: cat.toUpperCase(), ...item }));
+        }
+
+        const ws = XLSX.utils.json_to_sheet(dataset);
+        
+        // Auto-fit columns
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const colWidths = [];
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            let maxLen = 10;
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+                if (cell && cell.v != null) {
+                    const len = cell.v.toString().length;
+                    if (len > maxLen) maxLen = len;
+                }
+            }
+            colWidths.push({ wch: Math.min(maxLen + 3, 40) });
+        }
+        ws['!cols'] = colWidths;
+
+        XLSX.utils.book_append_sheet(wb, ws, "Equipment Specifications");
+        XLSX.writeFile(wb, `GeoGroup-Equipment-Specifications-${cat !== 'all' ? cat : 'All'}.xlsx`);
+    }
+
+    window.onload = function() {
+        populateEquipmentDropdown('all');
+        renderTable();
+    };
+</script>
+
+</body>
+</html>
